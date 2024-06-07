@@ -12,7 +12,7 @@ const addBookHandler = (request, h) => {
         readPage,
         reading,
     } = request.payload
-    const bookId = nanoid(16) 
+    const id = nanoid(16) 
     const finished = pageCount === readPage
     const insertedAt = new Date().toISOString()
     const updatedAt = insertedAt
@@ -36,7 +36,7 @@ const addBookHandler = (request, h) => {
     }
     
     const newBook = {
-        bookId,
+        id,
         name,
         year,
         author,
@@ -52,14 +52,14 @@ const addBookHandler = (request, h) => {
 
     books.push(newBook)
 
-    const isSuccess = books.filter((book) => book.bookId === bookId).length > 0
+    const isSuccess = books.filter((book) => book.id === id).length > 0
     
     if (isSuccess) {
         const response = h.response({
             status: 'success',
             message: 'Buku berhasil ditambahkan',
             data: {
-                bookId: bookId
+                bookId: id
             },
         })
         response.code(201)
@@ -74,6 +74,55 @@ const addBookHandler = (request, h) => {
     return response
 }
 
+const getBooksHandler = (request, h) => {
+    const { name, reading, finished } = request.query
+    var filteredItems = books
+
+    const queryItems = (needle, heystack) => {
+        let query = needle.toLowerCase()
+        return heystack.filter(item => item.name.toLowerCase().indexOf(query) >= 0)
+    }
+
+    if (name !== undefined) {
+        filteredItems = queryItems(name, books) 
+    }
+
+    if (reading !== undefined) {
+        const isReading = parseInt(reading) === 1
+        filteredItems = books.filter(book => book.reading === isReading)
+    }
+
+    if (finished !== undefined) {
+        const isFinished = parseInt(finished) === 1
+        filteredItems = books.filter(book => book.finished === isFinished)
+    }
+
+    if (books.length === 0) {
+        const response = h.response({
+            status: 'success',
+            data: {
+                books
+            }
+        })
+        response.code(200)
+        return response
+    }
+
+    const booksInfo = filteredItems.map(book => {
+        const { id, name, publisher } = book
+        return { id, name, publisher }
+    })
+    const response = h.response({
+        status: 'success',
+        data: {
+           books: booksInfo 
+        }
+    })
+    response.code(200)
+    return response
+}
+
 module.exports = {
-    addBookHandler
+    addBookHandler,
+    getBooksHandler
 }
